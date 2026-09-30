@@ -1,0 +1,40 @@
+{
+    "name": "meridian-bancorp",
+    "version": "1.0.0",
+    "description": "Meridian Bancorp Private Client & Institutional Banking Portal",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx server.ts",
+        "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+        "start": "node dist/server.cjs",
+        "lint": "tsc --noEmit"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "bcryptjs": "^3.0.3",
+        "clsx": "^2.1.1",
+        "express": "4.17.1",
+        "lucide-react": "^1.46.0",
+        "nodemon": "2.0.7",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+        "sqlite": "4.0.19",
+        "sqlite3": "5.0.2",
+        "tailwind-merge": "^3.7.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.3.3",
+        "@types/express": "^5.0.6",
+        "@types/node": "^26.5.1",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "@types/sqlite3": "^5.1.0",
+        "@vitejs/plugin-react": "^6.1.1",
+        "esbuild": "^0.28.2",
+        "tailwindcss": "^4.3.3",
+        "tsx": "^4.23.13",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.0"
+    }
+}

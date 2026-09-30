@@ -1,0 +1,308 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile and account information. Strictly private to the individual user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique Firebase Auth UID of the user.",
+          "maxLength": 128
+        },
+        "username": {
+          "type": "string",
+          "description": "User display handle or username.",
+          "maxLength": 64,
+          "minLength": 3
+        },
+        "name": {
+          "type": "string",
+          "description": "User full or legal name.",
+          "maxLength": 100,
+          "minLength": 1
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address.",
+          "maxLength": 120,
+          "pattern": "^[^@]+@[^@]+\\.[^@]+$"
+        },
+        "gender": {
+          "type": "string",
+          "description": "User gender designation.",
+          "maxLength": 32
+        },
+        "location": {
+          "type": "string",
+          "description": "User geographic location or residency.",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "User role: 'admin' or 'user'. Admins have privileged access to manage requests and review all records.",
+          "enum": ["admin", "user"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp."
+        }
+      },
+      "required": ["userId", "username", "name", "createdAt"]
+    },
+    "wallet": {
+      "title": "Wallet",
+      "description": "Financial wallet and asset ledger. Strictly private to the owning user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The owning user UID.",
+          "maxLength": 128
+        },
+        "totalUsd": {
+          "type": "number",
+          "description": "Total USD equity value."
+        },
+        "availableUsd": {
+          "type": "number",
+          "description": "Available USD trading balance."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp."
+        }
+      },
+      "required": ["userId", "totalUsd", "availableUsd"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Trading order placed on the exchange. Strictly isolated to the user who placed it.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The owning user UID.",
+          "maxLength": 128
+        },
+        "pair": {
+          "type": "string",
+          "description": "Trading pair symbol, e.g. BTC/USDT.",
+          "maxLength": 32
+        },
+        "type": {
+          "type": "string",
+          "description": "Order execution type.",
+          "enum": ["limit", "market", "stop-limit"]
+        },
+        "side": {
+          "type": "string",
+          "description": "Order side direction.",
+          "enum": ["buy", "sell"]
+        },
+        "price": {
+          "type": "number",
+          "description": "Order limit price."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Base asset quantity."
+        },
+        "status": {
+          "type": "string",
+          "description": "Order lifecycle state.",
+          "enum": ["open", "filled", "cancelled"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Order placement timestamp."
+        }
+      },
+      "required": ["userId", "pair", "type", "side", "price", "amount", "status", "createdAt"]
+    },
+    "position": {
+      "title": "Position",
+      "description": "Open perpetual futures margin position. Strictly owned and viewable only by the owner.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The owning user UID.",
+          "maxLength": 128
+        },
+        "pair": {
+          "type": "string",
+          "description": "Market symbol.",
+          "maxLength": 32
+        },
+        "side": {
+          "type": "string",
+          "description": "Direction.",
+          "enum": ["long", "short"]
+        },
+        "entryPrice": {
+          "type": "number",
+          "description": "Execution entry price."
+        },
+        "size": {
+          "type": "number",
+          "description": "Position contracts size."
+        },
+        "margin": {
+          "type": "number",
+          "description": "Allocated collateral margin."
+        },
+        "leverage": {
+          "type": "number",
+          "description": "Leverage multiplier."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Position open timestamp."
+        }
+      },
+      "required": ["userId", "pair", "side", "entryPrice", "size", "margin", "createdAt"]
+    },
+    "investment": {
+      "title": "Investment",
+      "description": "Private client fund ledger and withdrawal records.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The owning client user UID.",
+          "maxLength": 128
+        },
+        "investedAmount": {
+          "type": "number",
+          "description": "Capital invested amount."
+        },
+        "status": {
+          "type": "string",
+          "description": "Record status.",
+          "enum": ["completed", "reinvested"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Record timestamp."
+        }
+      },
+      "required": ["userId", "investedAmount", "status", "createdAt"]
+    },
+    "request": {
+      "title": "Refund and Transaction Request",
+      "description": "User refund or withdrawal transaction request. Visible to admins for approval/rejection/completion, and to the creating user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The owning user UID.",
+          "maxLength": 128
+        },
+        "username": {
+          "type": "string",
+          "description": "Username of requestor.",
+          "maxLength": 64
+        },
+        "clientName": {
+          "type": "string",
+          "description": "Client full name.",
+          "maxLength": 100
+        },
+        "amount": {
+          "type": "number",
+          "description": "Requested transaction or refund amount."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Asset currency ticker (e.g. USD, USDT, ETH)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Request category.",
+          "enum": ["refund", "withdrawal", "deposit_dispute"]
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason or memo for request."
+        },
+        "walletAddress": {
+          "type": "string",
+          "description": "Destination or originating wallet address."
+        },
+        "status": {
+          "type": "string",
+          "description": "Request workflow status.",
+          "enum": ["pending", "approved", "rejected", "completed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Submission timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp."
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Administrative notes or transaction verification hashes."
+        }
+      },
+      "required": ["userId", "username", "amount", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "User profile document. Each user can only read and write their own profile document. Admins can view all users."
+    },
+    "/users/{userId}/wallets/{walletId}": {
+      "schema": "wallet",
+      "description": "Private wallet balances for the user. Accessible strictly by the parent user or admin."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": "order",
+      "description": "Private orders placed by the user. Accessible strictly by the parent user or admin."
+    },
+    "/users/{userId}/positions/{positionId}": {
+      "schema": "position",
+      "description": "Private futures positions held by the user. Accessible strictly by the parent user or admin."
+    },
+    "/users/{userId}/investments/{investmentId}": {
+      "schema": "investment",
+      "description": "Private client fund records for the user. Accessible strictly by the parent user or admin."
+    },
+    "/requests/{requestId}": {
+      "schema": "request",
+      "description": "Refund and transaction requests. Admins see all requests and can approve, reject, or complete them. Users only see their own requests."
+    },
+    "/wallets/{walletId}": {
+      "schema": "wallet",
+      "description": "User wallet document. Each user can only read and write their own wallet where userId == request.auth.uid."
+    },
+    "/orders/{orderId}": {
+      "schema": "order",
+      "description": "User orders. Each user can only read and write their own orders where userId == request.auth.uid."
+    },
+    "/positions/{positionId}": {
+      "schema": "position",
+      "description": "User positions. Each user can only read and write their own positions where userId == request.auth.uid."
+    },
+    "/investments/{investmentId}": {
+      "schema": "investment",
+      "description": "User investments. Each user can only read and write their own investments where userId == request.auth.uid."
+    }
+  }
+}

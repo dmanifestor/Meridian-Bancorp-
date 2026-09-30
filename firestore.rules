@@ -1,0 +1,145 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net: Default-deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Security Helper Primitives
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Entity Schema Validation Helpers
+    function isValidUser(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.username is string && data.username.size() >= 3 && data.username.size() <= 64
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 100
+        && (!('email' in data) || (data.email is string && data.email.size() <= 120))
+        && (!('gender' in data) || (data.gender is string && data.gender.size() <= 32))
+        && (!('location' in data) || (data.location is string && data.location.size() <= 100))
+        && (!('role' in data) || (data.role in ['admin', 'user']));
+    }
+
+    function isValidWallet(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.totalUsd is number
+        && data.availableUsd is number;
+    }
+
+    function isValidOrder(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.pair is string && data.pair.size() <= 32
+        && data.type is string && data.type in ['limit', 'market', 'stop-limit']
+        && data.side is string && data.side in ['buy', 'sell']
+        && data.price is number
+        && data.amount is number
+        && data.status is string && data.status in ['open', 'filled', 'cancelled'];
+    }
+
+    function isValidPosition(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.pair is string && data.pair.size() <= 32
+        && data.side is string && data.side in ['long', 'short']
+        && data.entryPrice is number
+        && data.size is number
+        && data.margin is number;
+    }
+
+    function isValidInvestment(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.investedAmount is number
+        && data.status is string && data.status in ['completed', 'reinvested'];
+    }
+
+    function isValidRequest(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.username is string && data.username.size() <= 64
+        && data.amount is number
+        && data.status is string && data.status in ['pending', 'approved', 'rejected', 'completed'];
+    }
+
+    // -------------------------------------------------------------
+    // STRICT USER DATA ISOLATION:
+    // "Each user can only read and write their own data. No user can access other users data."
+    // -------------------------------------------------------------
+
+    // 1. User Profiles: Only the individual user can read or write their own profile
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) && incoming().userId == request.auth.uid;
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // User subcollections: Strictly owned by that user only
+      match /{allSubcollections=**} {
+        allow read, write: if isOwner(userId) && isValidId(userId);
+      }
+    }
+
+    // 2. Refund and Transaction Requests: Strictly owned by the user who created them
+    match /requests/{requestId} {
+      allow get: if isSignedIn() && isValidId(requestId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(requestId) && isValidRequest(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(requestId) && isValidRequest(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(requestId) && resource.data.userId == request.auth.uid;
+    }
+
+    // 3. Wallets: Strictly private to each user
+    match /wallets/{walletId} {
+      allow get: if isSignedIn() && isValidId(walletId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(walletId) && isValidWallet(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(walletId) && isValidWallet(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(walletId) && resource.data.userId == request.auth.uid;
+    }
+
+    // 4. Orders: Strictly private to each user
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && isValidId(orderId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(orderId) && resource.data.userId == request.auth.uid;
+    }
+
+    // 5. Positions: Strictly private to each user
+    match /positions/{positionId} {
+      allow get: if isSignedIn() && isValidId(positionId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(positionId) && isValidPosition(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(positionId) && isValidPosition(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(positionId) && resource.data.userId == request.auth.uid;
+    }
+
+    // 6. Investments: Strictly private to each user
+    match /investments/{investmentId} {
+      allow get: if isSignedIn() && isValidId(investmentId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(investmentId) && isValidInvestment(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(investmentId) && isValidInvestment(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(investmentId) && resource.data.userId == request.auth.uid;
+    }
+  }
+}
