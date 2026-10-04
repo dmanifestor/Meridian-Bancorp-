@@ -78,6 +78,11 @@ service cloud.firestore {
         && data.status is string && data.status in ['pending', 'approved', 'rejected', 'completed'];
     }
 
+    function isValidPortfolio(data) {
+      return data.userId is string && data.userId.size() <= 128
+        && data.totalNetWorth is number;
+    }
+
     // -------------------------------------------------------------
     // STRICT USER DATA ISOLATION:
     // "Each user can only read and write their own data. No user can access other users data."
@@ -140,6 +145,15 @@ service cloud.firestore {
       allow create: if isSignedIn() && isValidId(investmentId) && isValidInvestment(incoming()) && incoming().userId == request.auth.uid;
       allow update: if isSignedIn() && isValidId(investmentId) && isValidInvestment(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
       allow delete: if isSignedIn() && isValidId(investmentId) && resource.data.userId == request.auth.uid;
+    }
+
+    // 7. Portfolio Performance Snapshots: Strictly private to each user
+    match /portfolios/{portfolioId} {
+      allow get: if isSignedIn() && isValidId(portfolioId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(portfolioId) && isValidPortfolio(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(portfolioId) && isValidPortfolio(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && isValidId(portfolioId) && resource.data.userId == request.auth.uid;
     }
   }
 }

@@ -163,3 +163,18 @@ export interface ClientProfileData {
   destinationWallets?: DestinationWallet[];
 }
 
+export interface PortfolioHistoricalPoint {
+  timestamp: number;
+  dateStr: string;
+  value: number;
+  change: number;
+  changePct: number;
+  benchmarkValue: number;
+  benchmarkPct: number;
+  milestone?: string;
+  depositWithdrawal?: number;
+}
+
+export type PortfolioTimeframe = '24H' | '7D' | '1M' | '3M' | '1Y' | 'ALL';
+
+

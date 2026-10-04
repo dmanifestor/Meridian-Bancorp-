@@ -261,6 +261,36 @@
         }
       },
       "required": ["userId", "username", "amount", "status", "createdAt"]
+    },
+    "portfolio": {
+      "title": "Portfolio Performance Snapshot",
+      "description": "Historical portfolio net worth snapshot and allocation tracking. Strictly private to the individual user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique Firebase Auth UID of the user.",
+          "maxLength": 128
+        },
+        "totalNetWorth": {
+          "type": "number",
+          "description": "Total USD equity value."
+        },
+        "spotBalance": {
+          "type": "number",
+          "description": "Liquid spot balance in USD."
+        },
+        "marginBalance": {
+          "type": "number",
+          "description": "Allocated margin in positions."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Snapshot timestamp."
+        }
+      },
+      "required": ["userId", "totalNetWorth", "timestamp"]
     }
   },
   "firestore": {
@@ -303,6 +333,14 @@
     "/investments/{investmentId}": {
       "schema": "investment",
       "description": "User investments. Each user can only read and write their own investments where userId == request.auth.uid."
+    },
+    "/portfolios/{portfolioId}": {
+      "schema": "portfolio",
+      "description": "User portfolio snapshots. Each user can only read and write their own portfolio records where userId == request.auth.uid."
+    },
+    "/users/{userId}/portfolios/{portfolioId}": {
+      "schema": "portfolio",
+      "description": "User portfolio snapshots subcollection. Accessible strictly by the parent user where request.auth.uid == userId."
     }
   }
 }

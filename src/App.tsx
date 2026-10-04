@@ -516,6 +516,7 @@ export function App() {
             wallet={wallet}
             positions={positions}
             markets={markets}
+            currentUser={currentUser}
             onOpenDeposit={() => {
               setDepWithMode('deposit');
               setDepWithModalOpen(true);
