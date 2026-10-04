@@ -192,14 +192,18 @@ export const MarketScreener: React.FC<MarketScreenerProps> = ({
                             fill="none"
                             stroke={isPositive ? '#10b981' : '#f43f5e'}
                             strokeWidth="2"
-                            points={m.sparkline.map((val, idx) => {
-                              const min = Math.min(...m.sparkline);
-                              const max = Math.max(...m.sparkline);
+                            points={(() => {
+                              const spark = Array.isArray(m.sparkline) && m.sparkline.length > 1 ? m.sparkline : [1, 1];
+                              const min = Math.min(...spark);
+                              const max = Math.max(...spark);
                               const range = max - min || 1;
-                              const x = (idx / (m.sparkline.length - 1)) * 100;
-                              const y = 24 - ((val - min) / range) * 20 - 2;
-                              return `${x},${y}`;
-                            }).join(' ')}
+                              const len = Math.max(spark.length - 1, 1);
+                              return spark.map((val, idx) => {
+                                const x = (idx / len) * 100;
+                                const y = 24 - ((val - min) / range) * 20 - 2;
+                                return `${Number.isFinite(x) ? x : 0},${Number.isFinite(y) ? y : 12}`;
+                              }).join(' ');
+                            })()}
                           />
                         </svg>
                       </div>

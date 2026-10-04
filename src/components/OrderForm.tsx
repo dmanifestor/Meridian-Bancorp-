@@ -217,7 +217,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             </div>
             <div className="relative">
               <input
-                type="number"
+                type={orderType === 'market' ? 'text' : 'number'}
                 step="any"
                 disabled={orderType === 'market'}
                 value={orderType === 'market' ? 'Market Best' : price}

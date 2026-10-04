@@ -77,7 +77,9 @@ export const OrderBook: React.FC<OrderBookProps> = ({
         {/* Asks (Sells) */}
         <div className="flex-1 overflow-y-auto scrollbar-none flex flex-col justify-end space-y-0.5">
           {displayAsks.map((ask, idx) => {
-            const depthPct = Math.min((ask.total / maxTotal) * 100, 100);
+            const safeMax = Math.max(maxTotal, 0.001);
+            const depthPct = Number.isFinite(ask.total / safeMax) ? Math.min(Math.max((ask.total / safeMax) * 100, 0), 100) : 0;
+            const prec = Number.isFinite(pair?.precision) ? pair.precision : 2;
             return (
               <div
                 key={`ask-${idx}-${ask.price}`}
@@ -90,13 +92,13 @@ export const OrderBook: React.FC<OrderBookProps> = ({
                   style={{ width: `${depthPct}%` }}
                 />
                 <span className="text-rose-400 font-medium z-10">
-                  {ask.price.toFixed(pair.precision)}
+                  {Number.isFinite(ask.price) ? ask.price.toFixed(prec) : '0.00'}
                 </span>
                 <span className="text-right text-slate-300 z-10 font-normal">
-                  {ask.amount.toFixed(3)}
+                  {Number.isFinite(ask.amount) ? ask.amount.toFixed(3) : '0.000'}
                 </span>
                 <span className="text-right text-slate-500 z-10">
-                  {ask.total.toFixed(3)}
+                  {Number.isFinite(ask.total) ? ask.total.toFixed(3) : '0.000'}
                 </span>
               </div>
             );
@@ -110,18 +112,20 @@ export const OrderBook: React.FC<OrderBookProps> = ({
               pair.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'
             }`}>
               {pair.change24h >= 0 ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
-              ${pair.price.toFixed(pair.precision)}
+              ${Number.isFinite(pair.price) ? pair.price.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}
             </span>
           </div>
           <div className="text-[10px] text-slate-400">
-            Spread: <span className="text-slate-300">${orderBook.spread.toFixed(pair.precision)}</span> ({orderBook.spreadPercentage}%)
+            Spread: <span className="text-slate-300">${Number.isFinite(orderBook?.spread) ? orderBook.spread.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}</span> ({orderBook.spreadPercentage}%)
           </div>
         </div>
 
         {/* Bids (Buys) */}
         <div className="flex-1 overflow-y-auto scrollbar-none space-y-0.5">
           {displayBids.map((bid, idx) => {
-            const depthPct = Math.min((bid.total / maxTotal) * 100, 100);
+            const safeMax = Math.max(maxTotal, 0.001);
+            const depthPct = Number.isFinite(bid.total / safeMax) ? Math.min(Math.max((bid.total / safeMax) * 100, 0), 100) : 0;
+            const prec = Number.isFinite(pair?.precision) ? pair.precision : 2;
             return (
               <div
                 key={`bid-${idx}-${bid.price}`}
@@ -134,13 +138,13 @@ export const OrderBook: React.FC<OrderBookProps> = ({
                   style={{ width: `${depthPct}%` }}
                 />
                 <span className="text-emerald-400 font-medium z-10">
-                  {bid.price.toFixed(pair.precision)}
+                  {Number.isFinite(bid.price) ? bid.price.toFixed(prec) : '0.00'}
                 </span>
                 <span className="text-right text-slate-300 z-10 font-normal">
-                  {bid.amount.toFixed(3)}
+                  {Number.isFinite(bid.amount) ? bid.amount.toFixed(3) : '0.000'}
                 </span>
                 <span className="text-right text-slate-500 z-10">
-                  {bid.total.toFixed(3)}
+                  {Number.isFinite(bid.total) ? bid.total.toFixed(3) : '0.000'}
                 </span>
               </div>
             );

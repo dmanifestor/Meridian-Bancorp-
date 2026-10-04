@@ -37,10 +37,10 @@ export const RecentTrades: React.FC<RecentTradesProps> = ({ trades, pair }) => {
             className="grid grid-cols-3 px-2 py-1 rounded hover:bg-slate-800/40 transition-colors text-[11px]"
           >
             <span className={`font-semibold ${trade.side === 'buy' ? 'text-emerald-400' : 'text-rose-400'}`}>
-              {trade.price.toFixed(pair.precision)}
+              {Number.isFinite(trade.price) ? trade.price.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}
             </span>
             <span className="text-right text-slate-200 font-medium">
-              {trade.amount.toFixed(3)}
+              {Number.isFinite(trade.amount) ? trade.amount.toFixed(3) : '0.000'}
             </span>
             <span className="text-right text-slate-500 text-[10px]">
               {trade.time}

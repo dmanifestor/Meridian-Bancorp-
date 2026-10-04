@@ -48,258 +48,301 @@ export const TradingChart: React.FC<TradingChartProps> = ({
 
   // Handle canvas drawing with crisp pixel ratio and dynamic resizing
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container || candles.length === 0) return;
+    try {
+      const canvas = canvasRef.current;
+      const container = containerRef.current;
+      if (!canvas || !container || candles.length === 0) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    const rect = container.getBoundingClientRect();
-    const width = rect.width;
-    const height = rect.height;
+      const dpr = typeof window !== 'undefined' && Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+        ? window.devicePixelRatio
+        : 1;
+      const rect = container.getBoundingClientRect();
+      const width = Number.isFinite(rect.width) ? rect.width : 0;
+      const height = Number.isFinite(rect.height) ? rect.height : 0;
 
-    if (width === 0 || height === 0) return;
+      if (width <= 0 || height <= 0) return;
 
-    canvas.width = Math.floor(width * dpr);
-    canvas.height = Math.floor(height * dpr);
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, width, height);
+      if (Number.isFinite(dpr) && dpr > 0) {
+        ctx.scale(dpr, dpr);
+      }
+      ctx.clearRect(0, 0, width, height);
 
-    // Padding & dimensions (adaptive for mobile widths < 480px)
-    const isMobile = width < 500;
-    const paddingRight = isMobile ? 54 : 75; // for price axis
-    const paddingBottom = 26; // for time axis
-    const chartWidth = Math.max(width - paddingRight, 10);
-    const chartHeight = Math.max(height - paddingBottom, 10);
-    const volumeHeight = showVolume ? chartHeight * (isMobile ? 0.18 : 0.22) : 0;
-    const candleChartHeight = chartHeight - volumeHeight;
+      // Padding & dimensions (adaptive for mobile widths < 480px)
+      const isMobile = width < 500;
+      const paddingRight = isMobile ? 54 : 75; // for price axis
+      const paddingBottom = 26; // for time axis
+      const chartWidth = Math.max(width - paddingRight, 10);
+      const chartHeight = Math.max(height - paddingBottom, 10);
+      const volumeHeight = showVolume ? chartHeight * (isMobile ? 0.18 : 0.22) : 0;
+      const candleChartHeight = Math.max(chartHeight - volumeHeight, 10);
 
-    // Calculate price bounds
-    let minPrice = Infinity;
-    let maxPrice = -Infinity;
-    let maxVolume = 0;
-
-    candles.forEach(c => {
-      if (c.low < minPrice) minPrice = c.low;
-      if (c.high > maxPrice) maxPrice = c.high;
-      if (c.volume > maxVolume) maxVolume = c.volume;
-    });
-
-    const priceBuffer = (maxPrice - minPrice) * 0.08 || 1;
-    minPrice -= priceBuffer;
-    maxPrice += priceBuffer;
-
-    const priceRange = maxPrice - minPrice || 1;
-
-    // Coordinate mapping
-    const getX = (index: number) => {
-      const candleWidth = chartWidth / candles.length;
-      return index * candleWidth + candleWidth / 2;
-    };
-
-    const getY = (price: number) => {
-      return candleChartHeight - ((price - minPrice) / priceRange) * candleChartHeight;
-    };
-
-    // 1. Draw Grid lines
-    ctx.strokeStyle = 'rgba(30, 41, 59, 0.45)';
-    ctx.lineWidth = 1;
-
-    // Horizontal price grid lines
-    const gridSteps = 6;
-    for (let i = 0; i <= gridSteps; i++) {
-      const p = minPrice + (priceRange / gridSteps) * i;
-      const y = getY(p);
-
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(chartWidth, y);
-      ctx.stroke();
-
-      // Price label on right axis
-      ctx.fillStyle = '#64748b';
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(p > 1 ? p.toFixed(pair.precision) : p.toFixed(pair.precision), chartWidth + 8, y + 3);
-    }
-
-    // Vertical time grid lines
-    const timeSteps = 5;
-    for (let i = 0; i <= timeSteps; i++) {
-      const idx = Math.floor((candles.length - 1) * (i / timeSteps));
-      const c = candles[idx];
-      if (!c) continue;
-      const x = getX(idx);
-
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, chartHeight);
-      ctx.stroke();
-
-      // Time label on bottom axis
-      const date = new Date(c.time);
-      const timeStr = timeframe === '1D' || timeframe === '1W'
-        ? `${date.getMonth() + 1}/${date.getDate()}`
-        : `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-
-      ctx.fillStyle = '#64748b';
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(timeStr, x, chartHeight + 18);
-    }
-
-    // 2. Draw Volume Bars
-    if (showVolume && maxVolume > 0) {
-      const candleWidth = chartWidth / candles.length;
-      const barW = Math.max(candleWidth * 0.75, 2);
-
-      candles.forEach((c, i) => {
-        const x = getX(i) - barW / 2;
-        const vHeight = (c.volume / maxVolume) * (volumeHeight - 10);
-        const y = chartHeight - vHeight;
-
-        const isBull = c.close >= c.open;
-        ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.22)' : 'rgba(244, 63, 94, 0.22)';
-        ctx.fillRect(x, y, barW, vHeight);
-      });
-    }
-
-    // 3. Draw EMA indicators (EMA20: cyan, EMA50: amber)
-    if (showEMA && candles.length > 20) {
-      const calcEMA = (period: number) => {
-        const k = 2 / (period + 1);
-        let ema = candles[0].close;
-        const emaPoints: { x: number; y: number }[] = [];
-
-        candles.forEach((c, idx) => {
-          ema = c.close * k + ema * (1 - k);
-          if (idx >= period - 1) {
-            emaPoints.push({ x: getX(idx), y: getY(ema) });
-          }
-        });
-        return emaPoints;
+      // Safe Canvas Drawing Primitives to prevent Web IDL "The provided value is non-finite"
+      const safeMoveTo = (x: number, y: number) => {
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          ctx.moveTo(x, y);
+        }
       };
 
-      const ema20 = calcEMA(20);
-      const ema50 = calcEMA(50);
+      const safeLineTo = (x: number, y: number) => {
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          ctx.lineTo(x, y);
+        }
+      };
 
-      // Draw EMA 20
-      if (ema20.length > 1) {
-        ctx.beginPath();
-        ctx.strokeStyle = '#06b6d4';
-        ctx.lineWidth = 1.5;
-        ema20.forEach((pt, i) => {
-          if (i === 0) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
-        });
-        ctx.stroke();
+      const safeFillRect = (x: number, y: number, w: number, h: number) => {
+        if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(w) && Number.isFinite(h)) {
+          ctx.fillRect(x, y, w, h);
+        }
+      };
+
+      const safeFillText = (text: string, x: number, y: number) => {
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          ctx.fillText(text, x, y);
+        }
+      };
+
+      // Calculate price bounds with strict finite validation
+      let minPrice = Infinity;
+      let maxPrice = -Infinity;
+      let maxVolume = 0;
+
+      candles.forEach(c => {
+        if (Number.isFinite(c.low) && c.low < minPrice) minPrice = c.low;
+        if (Number.isFinite(c.high) && c.high > maxPrice) maxPrice = c.high;
+        if (Number.isFinite(c.volume) && c.volume > maxVolume) maxVolume = c.volume;
+      });
+
+      if (!Number.isFinite(minPrice) || !Number.isFinite(maxPrice) || minPrice >= maxPrice) {
+        minPrice = 100;
+        maxPrice = 200;
       }
 
-      // Draw EMA 50
-      if (ema50.length > 1) {
-        ctx.beginPath();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 1.5;
-        ema50.forEach((pt, i) => {
-          if (i === 0) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
-        });
-        ctx.stroke();
-      }
-    }
+      const priceBuffer = Math.max((maxPrice - minPrice) * 0.08, 0.01);
+      minPrice -= priceBuffer;
+      maxPrice += priceBuffer;
 
-    // 4. Draw Candlesticks OR Mountain Line
-    const candleWidth = chartWidth / candles.length;
-    const bodyWidth = Math.max(candleWidth * 0.72, 2.5);
+      const priceRange = Math.max(maxPrice - minPrice, 0.001);
+      const safePrecision = Number.isFinite(pair?.precision) && pair.precision >= 0 ? pair.precision : 2;
 
-    if (chartType === 'candles') {
-      candles.forEach((c, i) => {
-        const x = getX(i);
-        const isBull = c.close >= c.open;
-        const color = isBull ? '#10b981' : '#f43f5e';
+      // Coordinate mapping with finite guarantees
+      const getX = (index: number) => {
+        const candleWidth = chartWidth / (candles.length || 1);
+        const x = index * candleWidth + candleWidth / 2;
+        return Number.isFinite(x) ? x : 0;
+      };
 
-        // Draw Wick
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(x, getY(c.high));
-        ctx.lineTo(x, getY(c.low));
-        ctx.stroke();
+      const getY = (price: number) => {
+        if (!Number.isFinite(price)) return candleChartHeight / 2;
+        const y = candleChartHeight - ((price - minPrice) / priceRange) * candleChartHeight;
+        return Number.isFinite(y) ? y : candleChartHeight / 2;
+      };
 
-        // Draw Candle Body
-        const openY = getY(c.open);
-        const closeY = getY(c.close);
-        const topY = Math.min(openY, closeY);
-        const height = Math.max(Math.abs(closeY - openY), 1.5);
-
-        ctx.fillStyle = color;
-        ctx.fillRect(x - bodyWidth / 2, topY, bodyWidth, height);
-      });
-    } else {
-      // Line / Area Chart
-      ctx.beginPath();
-      candles.forEach((c, i) => {
-        const x = getX(i);
-        const y = getY(c.close);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-
-      // Gradient Fill
-      const grad = ctx.createLinearGradient(0, 0, 0, candleChartHeight);
-      grad.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
-      grad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
-
-      ctx.lineTo(getX(candles.length - 1), candleChartHeight);
-      ctx.lineTo(getX(0), candleChartHeight);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      // Main line
-      ctx.beginPath();
-      candles.forEach((c, i) => {
-        const x = getX(i);
-        const y = getY(c.close);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    // 5. Current Price Horizontal Dotted Line & Tag
-    const latestCandle = candles[candles.length - 1];
-    if (latestCandle) {
-      const currentY = getY(latestCandle.close);
-      const isBull = latestCandle.close >= latestCandle.open;
-      const tagColor = isBull ? '#10b981' : '#f43f5e';
-
-      ctx.save();
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = tagColor;
+      // 1. Draw Grid lines
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.45)';
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(0, currentY);
-      ctx.lineTo(chartWidth, currentY);
-      ctx.stroke();
-      ctx.restore();
 
-      // Tag on right axis
-      ctx.fillStyle = tagColor;
-      ctx.fillRect(chartWidth + 2, currentY - 10, paddingRight - 6, 20);
-      ctx.fillStyle = '#060a12';
-      ctx.font = 'bold 10px JetBrains Mono, monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(latestCandle.close.toFixed(pair.precision), chartWidth + (paddingRight - 4) / 2, currentY + 3.5);
+      // Horizontal price grid lines
+      const gridSteps = 6;
+      for (let i = 0; i <= gridSteps; i++) {
+        const p = minPrice + (priceRange / gridSteps) * i;
+        const y = getY(p);
+
+        ctx.beginPath();
+        safeMoveTo(0, y);
+        safeLineTo(chartWidth, y);
+        ctx.stroke();
+
+        // Price label on right axis
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'left';
+        safeFillText(p.toFixed(safePrecision), chartWidth + 8, y + 3);
+      }
+
+      // Vertical time grid lines
+      const timeSteps = 5;
+      for (let i = 0; i <= timeSteps; i++) {
+        const idx = Math.floor((candles.length - 1) * (i / timeSteps));
+        const c = candles[idx];
+        if (!c) continue;
+        const x = getX(idx);
+
+        ctx.beginPath();
+        safeMoveTo(x, 0);
+        safeLineTo(x, chartHeight);
+        ctx.stroke();
+
+        // Time label on bottom axis
+        const date = new Date(c.time);
+        const timeStr = timeframe === '1D' || timeframe === '1W'
+          ? `${date.getMonth() + 1}/${date.getDate()}`
+          : `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        safeFillText(timeStr, x, chartHeight + 18);
+      }
+
+      // 2. Draw Volume Bars
+      if (showVolume && maxVolume > 0) {
+        const candleWidth = chartWidth / candles.length;
+        const barW = Math.max(candleWidth * 0.75, 2);
+
+        candles.forEach((c, i) => {
+          const x = getX(i) - barW / 2;
+          const vHeight = Math.max(0, (c.volume / maxVolume) * (volumeHeight - 10));
+          const y = chartHeight - vHeight;
+
+          const isBull = c.close >= c.open;
+          ctx.fillStyle = isBull ? 'rgba(16, 185, 129, 0.22)' : 'rgba(244, 63, 94, 0.22)';
+          safeFillRect(x, y, barW, vHeight);
+        });
+      }
+
+      // 3. Draw EMA indicators (EMA20: cyan, EMA50: amber)
+      if (showEMA && candles.length > 20) {
+        const calcEMA = (period: number) => {
+          const k = 2 / (period + 1);
+          let ema = candles[0].close;
+          const emaPoints: { x: number; y: number }[] = [];
+
+          candles.forEach((c, idx) => {
+            ema = c.close * k + ema * (1 - k);
+            if (idx >= period - 1) {
+              emaPoints.push({ x: getX(idx), y: getY(ema) });
+            }
+          });
+          return emaPoints;
+        };
+
+        const ema20 = calcEMA(20);
+        const ema50 = calcEMA(50);
+
+        // Draw EMA 20
+        if (ema20.length > 1) {
+          ctx.beginPath();
+          ctx.strokeStyle = '#06b6d4';
+          ctx.lineWidth = 1.5;
+          ema20.forEach((pt, i) => {
+            if (i === 0) safeMoveTo(pt.x, pt.y);
+            else safeLineTo(pt.x, pt.y);
+          });
+          ctx.stroke();
+        }
+
+        // Draw EMA 50
+        if (ema50.length > 1) {
+          ctx.beginPath();
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ema50.forEach((pt, i) => {
+            if (i === 0) safeMoveTo(pt.x, pt.y);
+            else safeLineTo(pt.x, pt.y);
+          });
+          ctx.stroke();
+        }
+      }
+
+      // 4. Draw Candlesticks OR Mountain Line
+      const candleWidth = chartWidth / candles.length;
+      const bodyWidth = Math.max(candleWidth * 0.72, 2.5);
+
+      if (chartType === 'candles') {
+        candles.forEach((c, i) => {
+          const x = getX(i);
+          const isBull = c.close >= c.open;
+          const color = isBull ? '#10b981' : '#f43f5e';
+
+          // Draw Wick
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          safeMoveTo(x, getY(c.high));
+          safeLineTo(x, getY(c.low));
+          ctx.stroke();
+
+          // Draw Candle Body
+          const openY = getY(c.open);
+          const closeY = getY(c.close);
+          const topY = Math.min(openY, closeY);
+          const height = Math.max(Math.abs(closeY - openY), 1.5);
+
+          ctx.fillStyle = color;
+          safeFillRect(x - bodyWidth / 2, topY, bodyWidth, height);
+        });
+      } else {
+        // Line / Area Chart
+        ctx.beginPath();
+        candles.forEach((c, i) => {
+          const x = getX(i);
+          const y = getY(c.close);
+          if (i === 0) safeMoveTo(x, y);
+          else safeLineTo(x, y);
+        });
+
+        // Gradient Fill
+        const gradH = Number.isFinite(candleChartHeight) && candleChartHeight > 0 ? candleChartHeight : 100;
+        const grad = ctx.createLinearGradient(0, 0, 0, gradH);
+        grad.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        grad.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+        safeLineTo(getX(candles.length - 1), candleChartHeight);
+        safeLineTo(getX(0), candleChartHeight);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Main line
+        ctx.beginPath();
+        candles.forEach((c, i) => {
+          const x = getX(i);
+          const y = getY(c.close);
+          if (i === 0) safeMoveTo(x, y);
+          else safeLineTo(x, y);
+        });
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // 5. Current Price Horizontal Dotted Line & Tag
+      const latestCandle = candles[candles.length - 1];
+      if (latestCandle && Number.isFinite(latestCandle.close)) {
+        const currentY = getY(latestCandle.close);
+        const isBull = latestCandle.close >= latestCandle.open;
+        const tagColor = isBull ? '#10b981' : '#f43f5e';
+
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = tagColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        safeMoveTo(0, currentY);
+        safeLineTo(chartWidth, currentY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Tag on right axis
+        ctx.fillStyle = tagColor;
+        safeFillRect(chartWidth + 2, currentY - 10, paddingRight - 6, 20);
+        ctx.fillStyle = '#060a12';
+        ctx.font = 'bold 10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        safeFillText(latestCandle.close.toFixed(safePrecision), chartWidth + (paddingRight - 4) / 2, currentY + 3.5);
+      }
+    } catch (e) {
+      console.error('TradingChart render error:', e);
     }
-  }, [candles, chartType, showEMA, showVolume, timeframe, pair.precision, containerSize]);
+  }, [candles, chartType, showEMA, showVolume, timeframe, pair?.precision, containerSize]);
 
   // Handle Mouse / Touch inspection
   const handlePositionInspect = (clientX: number) => {
@@ -364,11 +407,11 @@ export const TradingChart: React.FC<TradingChartProps> = ({
         {/* Center: Open High Low Close tooltip display */}
         {activeCandle && (
           <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] text-slate-400 font-medium overflow-x-auto scrollbar-none">
-            <span className="hidden sm:inline">O: <strong className="text-slate-200">{activeCandle.open.toFixed(pair.precision)}</strong></span>
-            <span className="hidden sm:inline">H: <strong className="text-emerald-400">{activeCandle.high.toFixed(pair.precision)}</strong></span>
-            <span className="hidden sm:inline">L: <strong className="text-rose-400">{activeCandle.low.toFixed(pair.precision)}</strong></span>
+            <span className="hidden sm:inline">O: <strong className="text-slate-200">{Number.isFinite(activeCandle.open) ? activeCandle.open.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}</strong></span>
+            <span className="hidden sm:inline">H: <strong className="text-emerald-400">{Number.isFinite(activeCandle.high) ? activeCandle.high.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}</strong></span>
+            <span className="hidden sm:inline">L: <strong className="text-rose-400">{Number.isFinite(activeCandle.low) ? activeCandle.low.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}</strong></span>
             <span>C: <strong className={activeCandle.close >= activeCandle.open ? 'text-emerald-400' : 'text-rose-400'}>
-              {activeCandle.close.toFixed(pair.precision)}
+              {Number.isFinite(activeCandle.close) ? activeCandle.close.toFixed(Number.isFinite(pair?.precision) ? pair.precision : 2) : '0.00'}
             </strong></span>
             {showVolume && (
               <span className="hidden lg:inline">Vol: <strong className="text-slate-300">{activeCandle.volume.toLocaleString()}</strong></span>

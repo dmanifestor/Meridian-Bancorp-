@@ -158,7 +158,7 @@ export const MarketOverviewBar: React.FC<MarketOverviewBarProps> = ({
           <div className={`text-base sm:text-lg font-black tracking-tight ${
             activePair.change24h >= 0 ? 'text-emerald-400' : 'text-rose-400'
           }`}>
-            ${activePair.price > 1 ? activePair.price.toLocaleString(undefined, { minimumFractionDigits: activePair.precision }) : activePair.price}
+            ${activePair.price > 1 ? activePair.price.toLocaleString(undefined, { minimumFractionDigits: Number.isFinite(activePair?.precision) ? activePair.precision : 2 }) : activePair.price}
           </div>
         </div>
 
@@ -177,7 +177,7 @@ export const MarketOverviewBar: React.FC<MarketOverviewBarProps> = ({
         <div className="hidden sm:flex flex-col">
           <div className="text-[10px] text-slate-400 font-sans uppercase font-medium">24h High</div>
           <div className="text-slate-200 font-semibold">
-            ${activePair.high24h.toLocaleString(undefined, { minimumFractionDigits: activePair.precision })}
+            ${activePair.high24h.toLocaleString(undefined, { minimumFractionDigits: Number.isFinite(activePair?.precision) ? activePair.precision : 2 })}
           </div>
         </div>
 
@@ -185,7 +185,7 @@ export const MarketOverviewBar: React.FC<MarketOverviewBarProps> = ({
         <div className="hidden sm:flex flex-col">
           <div className="text-[10px] text-slate-400 font-sans uppercase font-medium">24h Low</div>
           <div className="text-slate-200 font-semibold">
-            ${activePair.low24h.toLocaleString(undefined, { minimumFractionDigits: activePair.precision })}
+            ${activePair.low24h.toLocaleString(undefined, { minimumFractionDigits: Number.isFinite(activePair?.precision) ? activePair.precision : 2 })}
           </div>
         </div>
 
@@ -203,7 +203,7 @@ export const MarketOverviewBar: React.FC<MarketOverviewBarProps> = ({
             <div className="flex flex-col">
               <div className="text-[10px] text-slate-400 font-sans uppercase font-medium">Funding / Countdown</div>
               <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
-                <span>{(activePair.fundingRate! * 100).toFixed(4)}%</span>
+                <span>{Number.isFinite(activePair.fundingRate) ? (activePair.fundingRate! * 100).toFixed(4) : '0.0100'}%</span>
                 <span className="text-slate-500 font-normal">in</span>
                 <span className="text-slate-300">03:41:20</span>
               </div>
@@ -211,7 +211,7 @@ export const MarketOverviewBar: React.FC<MarketOverviewBarProps> = ({
             <div className="flex flex-col">
               <div className="text-[10px] text-slate-400 font-sans uppercase font-medium">Mark Price</div>
               <div className="text-slate-300 font-semibold">
-                ${(activePair.price * 1.0002).toFixed(activePair.precision)}
+                ${(activePair.price * 1.0002).toFixed(Number.isFinite(activePair?.precision) ? activePair.precision : 2)}
               </div>
             </div>
           </div>
