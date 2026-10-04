@@ -2,10 +2,14 @@
     "name": "meridian-bancorp",
     "version": "1.0.0",
     "description": "Meridian Bancorp Private Client & Institutional Banking Portal",
+    "homepage": ".",
     "type": "module",
     "scripts": {
         "dev": "tsx server.ts",
         "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+        "build:gh-pages": "vite build --base=./",
+        "predeploy": "npm run build:gh-pages",
+        "deploy": "gh-pages -d dist",
         "start": "node dist/server.cjs",
         "lint": "tsc --noEmit"
     },
@@ -34,6 +38,7 @@
         "@types/sqlite3": "^5.1.0",
         "@vitejs/plugin-react": "^6.1.1",
         "esbuild": "^0.28.2",
+        "gh-pages": "^6.3.0",
         "tailwindcss": "^4.3.3",
         "tsx": "^4.23.13",
         "typescript": "^7.0.2",

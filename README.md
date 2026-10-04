@@ -82,3 +82,27 @@ CREATE TABLE IF NOT EXISTS user (
 - sqlite3: SQLite library for Node.js
 - bcrypt: Library for password hashing
 - path: Module for file path manipulation
+
+## GitHub Pages Deployment (`gh-pages`)
+
+This application is fully configured for deployment on **GitHub Pages**:
+
+### Option 1: Automatic Deployment via GitHub Actions (Recommended)
+1. Push this repository to GitHub on `main` or `master`.
+2. Go to your GitHub repository **Settings** > **Pages**.
+3. Under **Build and deployment** > **Source**, select **GitHub Actions**.
+4. The workflow in `.github/workflows/deploy.yml` will automatically build the static assets with relative paths (`./`) and deploy the app to `https://<username>.github.io/<repository-name>/`.
+
+### Option 2: Deploying via `gh-pages` Branch
+1. Run the deploy script locally:
+   ```bash
+   npm run deploy
+   ```
+2. In your repository **Settings** > **Pages**, set **Source** to `Deploy from a branch` and choose the `gh-pages` branch.
+
+### Key Features Configured for GitHub Pages:
+- **Relative Asset Paths (`base: './'`)**: Assets load properly under any repository subfolder or custom domain.
+- **SPA Fallback (`public/404.html`)**: Prevents 404 errors when reloading routes directly.
+- **`.nojekyll`**: Prevents Jekyll from omitting required build files.
+- **Offline & Static Fallback Mode**: Client authentication, requests management, institutional trading dashboard, and performance analytics function seamlessly in static preview even without a Node.js server.
+
