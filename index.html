@@ -22,13 +22,24 @@
   </head>
   <body class="bg-[#050c1e] text-white min-h-screen" style="background-color: #050c1e; margin: 0; color: #ffffff;">
     <div id="root">
-      <div style="min-height: 100vh; background-color: #050c1e; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; font-family: system-ui, -apple-system, sans-serif;">
+      <div id="meridian-loader" style="min-height: 100vh; background-color: #050c1e; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #ffffff; font-family: system-ui, -apple-system, sans-serif;">
         <div style="width: 44px; height: 44px; border: 3px solid rgba(250, 204, 21, 0.2); border-top-color: #facc15; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
         <div style="margin-top: 18px; font-weight: 800; font-size: 17px; letter-spacing: 0.05em; color: #facc15;">MERIDIAN BANCORP</div>
-        <div style="margin-top: 6px; font-size: 12px; color: #94a3b8; font-family: monospace;">Loading Institutional Portal...</div>
+        <div id="meridian-loader-notice" style="margin-top: 6px; font-size: 12px; color: #94a3b8; font-family: monospace;">Loading Institutional Portal...</div>
         <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
       </div>
     </div>
+    <script>
+      setTimeout(function() {
+        var loader = document.getElementById('meridian-loader');
+        if (loader) {
+          var notice = document.getElementById('meridian-loader-notice');
+          if (notice) {
+            notice.innerHTML = 'Still loading? <div style="margin-top:10px;display:flex;gap:8px;justify-content:center;"><button onclick="window.location.reload()" style="background:#facc15;color:#050c1e;border:none;padding:6px 14px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;">Refresh Portal</button><button onclick="try{localStorage.clear();}catch(e){}window.location.hash=\'homepage\';window.location.reload();" style="background:#1e3a8a;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-weight:600;font-size:12px;cursor:pointer;">Reset Cache</button></div>';
+          }
+        }
+      }, 4000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
