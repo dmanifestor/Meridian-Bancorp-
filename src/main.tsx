@@ -309,7 +309,11 @@ function safelyInstallWebGuards() {
   } catch {}
 }
 
-safelyInstallWebGuards();
+try {
+  safelyInstallWebGuards();
+} catch (guardErr) {
+  console.warn('WebIDL protection warning:', guardErr);
+}
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -425,13 +429,32 @@ class GlobalErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBound
   }
 }
 
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  ReactDOM.createRoot(rootElement).render(
-    <React.StrictMode>
-      <GlobalErrorBoundary>
-        <App />
-      </GlobalErrorBoundary>
-    </React.StrictMode>
-  );
+function mountApp() {
+  const rootElement = document.getElementById('root');
+  if (!rootElement) {
+    return;
+  }
+
+  try {
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(
+      <React.StrictMode>
+        <GlobalErrorBoundary>
+          <App />
+        </GlobalErrorBoundary>
+      </React.StrictMode>
+    );
+  } catch (err) {
+    console.error('Fatal initialization error:', err);
+    const notice = document.getElementById('meridian-loader-notice');
+    if (notice) {
+      notice.innerHTML = '<div style="color:#ef4444;font-size:12px;margin-top:8px;">Failed to initialize workspace. <button onclick="window.location.reload()" style="background:#facc15;color:#050c1e;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;margin-left:6px;font-weight:700;">Reload</button></div>';
+    }
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', mountApp);
+} else {
+  mountApp();
 }

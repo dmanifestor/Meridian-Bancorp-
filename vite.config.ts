@@ -4,7 +4,12 @@ import tailwindcss from '@tailwindcss/vite';
 
 // Determine deployment base path
 const getBase = () => {
-  if (process.env.VITE_BASE_PATH) return process.env.VITE_BASE_PATH;
+  if (process.env.BASE_PATH) {
+    return process.env.BASE_PATH.endsWith('/') ? process.env.BASE_PATH : `${process.env.BASE_PATH}/`;
+  }
+  if (process.env.VITE_BASE_PATH) {
+    return process.env.VITE_BASE_PATH.endsWith('/') ? process.env.VITE_BASE_PATH : `${process.env.VITE_BASE_PATH}/`;
+  }
   if (process.env.GITHUB_REPOSITORY) {
     const parts = process.env.GITHUB_REPOSITORY.split('/');
     if (parts[1]) return `/${parts[1]}/`;
